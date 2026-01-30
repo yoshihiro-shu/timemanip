@@ -3,7 +3,9 @@ package timemanip
 
 import (
 	"go/ast"
+	"go/token"
 	"go/types"
+	"strings"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -59,10 +61,48 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
+		// Check for nolint directive
+		if hasNolintDirective(pass, call.Pos()) {
+			return
+		}
+
 		pass.Reportf(call.Pos(), "use of time.Time.%s is not allowed", methodName)
 	})
 
 	return nil, nil
+}
+
+// hasNolintDirective checks if the given position has a //nolint:timemanip comment.
+func hasNolintDirective(pass *analysis.Pass, pos token.Pos) bool {
+	file := pass.Fset.File(pos)
+	if file == nil {
+		return false
+	}
+
+	line := file.Line(pos)
+
+	for _, f := range pass.Files {
+		for _, cg := range f.Comments {
+			for _, c := range cg.List {
+				commentLine := file.Line(c.Pos())
+				if commentLine != line {
+					continue
+				}
+
+				text := c.Text
+				// Check for //nolint:timemanip or //nolint (all linters)
+				if strings.Contains(text, "nolint:timemanip") || strings.Contains(text, "nolint:all") {
+					return true
+				}
+				// Check for //nolint without specific linter (disables all)
+				if strings.TrimSpace(text) == "//nolint" || strings.HasPrefix(strings.TrimSpace(text), "//nolint ") {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 // isTimeType checks if the given type is time.Time or *time.Time.

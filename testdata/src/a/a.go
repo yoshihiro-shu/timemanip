@@ -76,3 +76,19 @@ func callOnReturnValue() {
 	_ = functionReturningTime().Add(d) // want "use of time.Time.Add is not allowed"
 	_ = time.Now().Add(d)              // want "use of time.Time.Add is not allowed"
 }
+
+func nolintDirective() {
+	t := time.Now()
+	d := time.Hour
+
+	// nolint directive - should NOT be detected
+	_ = t.Add(d) //nolint:timemanip
+	_ = t.Sub(t) //nolint:timemanip this is intentional
+	_ = t.AddDate(1, 0, 0) //nolint:all
+
+	// Without specific linter - should NOT be detected
+	_ = t.Truncate(d) //nolint
+
+	// Without nolint - should be detected
+	_ = t.Round(d) // want "use of time.Time.Round is not allowed"
+}
