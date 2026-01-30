@@ -1,6 +1,6 @@
 module github.com/yoshihiro-shu/timemanip
 
-go 1.24
+go 1.25
 
 require golang.org/x/tools v0.27.0
 
