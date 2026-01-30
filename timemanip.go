@@ -67,9 +67,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 // isTimeType checks if the given type is time.Time or *time.Time.
 func isTimeType(t types.Type) bool {
+	// Unwrap alias types (Go 1.22+)
+	t = types.Unalias(t)
+
 	// Handle pointer types
 	if ptr, ok := t.(*types.Pointer); ok {
-		t = ptr.Elem()
+		t = types.Unalias(ptr.Elem())
 	}
 
 	named, ok := t.(*types.Named)
